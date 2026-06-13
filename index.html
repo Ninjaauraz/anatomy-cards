@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anatomy Mastery</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #1a1a1a;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            --accent: #4a90e2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            position: absolute;
+            top: 40px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .card-container {
+            width: 90%;
+            max-width: 400px;
+            height: 500px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        .category {
+            position: absolute;
+            top: 20px;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 50px;
+            display: flex;
+            gap: 40px;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 15px 30px;
+            border-radius: 30px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        button:active {
+            transform: scale(0.95);
+            background-color: rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Anatomy</h1>
+        <div class="progress" id="progressIndicator">1 / 5</div>
+    </div>
+
+    <div class="card-container" id="cardContainer">
+        <div class="card" id="flashcard">
+            <div class="card-face card-front">
+                <div class="category" id="categoryFront">Gross Anatomy</div>
+                <div class="content" id="questionContent">Loading...</div>
+            </div>
+            <div class="card-face card-back">
+                <div class="category" id="categoryBack">Answer</div>
+                <div class="content" id="answerContent">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btnPrev">Prev</button>
+        <button id="btnNext">Next</button>
+    </div>
+
+    <script>
+        const flashcards = [
+            {
+                category: "Upper Limb",
+                question: "Which nerve is most vulnerable to injury in a midshaft fracture of the humerus?",
+                answer: "Radial nerve (travels in the spiral groove with the deep brachial artery)."
+            },
+            {
+                category: "Thorax",
+                question: "What are the three major structures that pass through the diaphragm, and at what vertebral levels?",
+                answer: "Inferior Vena Cava (T8), Esophagus (T10), Aorta (T12)."
+            },
+            {
+                category: "Neuroanatomy",
+                question: "Which cranial nerve provides motor innervation to the muscles of facial expression?",
+                answer: "Facial Nerve (CN VII)."
+            },
+            {
+                category: "Gastrointestinal",
+                question: "What artery supplies the foregut, and what are its three main branches?",
+                answer: "Celiac trunk. Branches: Left gastric, Splenic, and Common hepatic arteries."
+            },
+            {
+                category: "Head & Neck",
+                question: "What muscle divides the neck into anterior and posterior triangles?",
+                answer: "Sternocleidomastoid muscle."
+            }
+        ];
+
+        let currentIndex = 0;
+        const card = document.getElementById('flashcard');
+        const cardContainer = document.getElementById('cardContainer');
+        const questionContent = document.getElementById('questionContent');
+        const answerContent = document.getElementById('answerContent');
+        const categoryFront = document.getElementById('categoryFront');
+        const progressIndicator = document.getElementById('progressIndicator');
+
+        function loadCard(index) {
+            const data = flashcards[index];
+            questionContent.textContent = data.question;
+            answerContent.textContent = data.answer;
+            categoryFront.textContent = data.category;
+            progressIndicator.textContent = `${index + 1} / ${flashcards.length}`;
+        }
+
+        cardContainer.addEventListener('click', () => {
+            card.classList.toggle('is-flipped');
+        });
+
+        document.getElementById('btnNext').addEventListener('click', () => {
+            if (card.classList.contains('is-flipped')) {
+                card.classList.remove('is-flipped');
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % flashcards.length;
+                    loadCard(currentIndex);
+                }, 300);
+            } else {
+                currentIndex = (currentIndex + 1) % flashcards.length;
+                loadCard(currentIndex);
+            }
+        });
+
+        document.getElementById('btnPrev').addEventListener('click', () => {
+            if (card.classList.contains('is-flipped')) {
+                card.classList.remove('is-flipped');
+                setTimeout(() => {
+                    currentIndex = (currentIndex - 1 + flashcards.length) % flashcards.length;
+                    loadCard(currentIndex);
+                }, 300);
+            } else {
+                currentIndex = (currentIndex - 1 + flashcards.length) % flashcards.length;
+                loadCard(currentIndex);
+            }
+        });
+
+        // Initialize first card
+        loadCard(currentIndex);
+
+        // Service Worker Registration for Offline Support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, (err) => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
